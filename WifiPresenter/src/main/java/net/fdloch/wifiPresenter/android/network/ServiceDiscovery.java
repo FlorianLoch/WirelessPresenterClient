@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -28,7 +29,9 @@ public class ServiceDiscovery {
         log.info("Stopped service discovery!");
     }
 
-    public void discoverServices(final ServiceDiscovery.Callback onDiscovered, final int port, int timeoutMs) {
+    public void discoverServices(final ServiceDiscovery.Callback callback, final int port, int timeoutMs) {
+        final List<ServerInformation> discoveredServers = new ArrayList<ServerInformation>();
+
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -44,6 +47,8 @@ public class ServiceDiscovery {
 
                     byte[] receiveBuffer = new byte[1000]; //It might be UTF-32 in worst case, so 4 bytes per character
 
+
+
                     while (true) {
                         DatagramPacket responsePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
                         socket.receive(responsePacket);
@@ -58,7 +63,9 @@ public class ServiceDiscovery {
                         log.info(String.format("Contains: '%s' (Length: %d)", content, content.length()));
 
                         if (content.startsWith(DISCOVERY_RESPONSE)) {
-                            onDiscovered.doAction(responsePacket.getAddress(), content.substring(DISCOVERY_RESPONSE.length()));
+                            ServerInformation discoveredServer = new ServerInformation(responsePacket.getAddress(), content.substring(DISCOVERY_RESPONSE.length()));
+                            discoveredServers.add(discoveredServer);
+                            callback.onServerFound(discoveredServer);
                         }
                     }
                 } catch(IOException e) {
@@ -71,12 +78,33 @@ public class ServiceDiscovery {
             @Override
             public void run() {
                 ServiceDiscovery.this.stopDiscovery();
+                callback.onTimeoutReached(discoveredServers);
             }
         }, timeoutMs);
     }
 
     public interface Callback {
-        void doAction(InetAddress discoveredServer, String hostname);
+        void onServerFound(ServerInformation discoveredServer);
+
+        void onTimeoutReached(List<ServerInformation> discoveredServers);
+    }
+
+    public class ServerInformation {
+        private InetAddress address;
+        private String hostname;
+
+        public ServerInformation(InetAddress address, String hostname) {
+            this.address = address;
+            this.hostname = hostname;
+        }
+
+        public InetAddress getAddress() {
+            return address;
+        }
+
+        public String getHostname() {
+            return hostname;
+        }
     }
 
 }

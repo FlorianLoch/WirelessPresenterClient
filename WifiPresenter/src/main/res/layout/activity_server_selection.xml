@@ -8,65 +8,10 @@
                 android:paddingBottom="@dimen/activity_vertical_margin"
                 tools:context=".ServerSelection">
 
-    <LinearLayout
-            android:orientation="vertical"
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:layout_alignParentTop="true" android:layout_alignParentLeft="true"
-            android:id="@+id/linearLayout">
-
-        <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceLarge"
-                android:text="@string/lbl_server_address"
-                android:id="@+id/textView3" android:layout_marginBottom="30dp"/>
-
-        <LinearLayout
-                android:orientation="horizontal"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content">
-            <TextView
-                    android:layout_width="@dimen/lbl_server_address"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="@string/lbl_server_ip"
-                    android:id="@+id/textView" android:layout_gravity="center_horizontal"
-                    android:elegantTextHeight="false"/>
-            <EditText
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:id="@+id/txt_ip" android:layout_gravity="center_horizontal"
-                    android:inputType="text"/>
-        </LinearLayout>
-        <LinearLayout
-                android:orientation="horizontal"
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent" android:layout_marginTop="5dp">
-            <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:text="@string/lbl_server_passphrase"
-                    android:id="@+id/textView2" android:layout_gravity="center_horizontal"/>
-            <EditText
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="number"
-                    android:ems="10"
-                    android:id="@+id/txt_passphrase" android:layout_gravity="center_horizontal"/>
-
-        </LinearLayout>
-    </LinearLayout>
-
-    <Button
-            android:layout_width="fill_parent"
+    <ListView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/btn_connect"
-            android:id="@+id/btn_connect"
-            android:layout_alignParentBottom="true"
-            android:layout_alignRight="@+id/linearLayout"
-            android:layout_marginRight="0dp"
-            android:clickable="true" />
+            android:id="@+id/lv_found_server"
+            android:layout_gravity="center_horizontal"/>
 
 </RelativeLayout>
