@@ -1,8 +1,6 @@
-package net.fdloch.wifiPresenter.android;
+package net.fdloch.wifiPresenter.android.activities;
 
-import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -11,7 +9,13 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import net.fdloch.wifiPresenter.android.DiscoveredServerAdapter;
+import net.fdloch.wifiPresenter.android.R;
+import net.fdloch.wifiPresenter.android.dialog.CustomConnectionDialog;
+import net.fdloch.wifiPresenter.android.dialog.PassphraseDialog;
+import net.fdloch.wifiPresenter.android.dialog.SimpleInputDialog;
 import net.fdloch.wifiPresenter.android.network.ServiceDiscovery;
+import net.fdloch.wifiPresenter.android.types.ServerAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

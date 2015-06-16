@@ -1,4 +1,4 @@
-package net.fdloch.wifiPresenter.android;
+package net.fdloch.wifiPresenter.android.types;
 
 import android.os.Parcel;
 import android.os.Parcelable;

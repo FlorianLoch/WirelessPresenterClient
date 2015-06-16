@@ -1,6 +1,6 @@
 package net.fdloch.wifiPresenter.android.network;
 
-import net.fdloch.wifiPresenter.android.Hasher;
+import net.fdloch.wifiPresenter.android.util.Hasher;
 
 /**
  * Created by florian on 14.03.15.

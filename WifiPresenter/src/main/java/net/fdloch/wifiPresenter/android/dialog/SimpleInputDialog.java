@@ -1,4 +1,4 @@
-package net.fdloch.wifiPresenter.android;
+package net.fdloch.wifiPresenter.android.dialog;
 
 import android.app.AlertDialog;
 import android.content.Context;

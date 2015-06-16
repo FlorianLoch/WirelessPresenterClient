@@ -1,4 +1,4 @@
-package net.fdloch.wifiPresenter.android;
+package net.fdloch.wifiPresenter.android.util;
 
 import org.bouncycastle.util.encoders.Hex;
 

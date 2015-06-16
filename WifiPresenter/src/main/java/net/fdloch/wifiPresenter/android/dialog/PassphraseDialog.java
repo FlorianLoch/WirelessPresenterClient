@@ -1,4 +1,4 @@
-package net.fdloch.wifiPresenter.android;
+package net.fdloch.wifiPresenter.android.dialog;
 
 /**
  * Created by florian on 16.06.15.

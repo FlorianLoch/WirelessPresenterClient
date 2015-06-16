@@ -1,4 +1,4 @@
-package net.fdloch.wifiPresenter.android;
+package net.fdloch.wifiPresenter.android.activities;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -9,9 +9,13 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Toast;
+import net.fdloch.wifiPresenter.android.CommandProducer;
+import net.fdloch.wifiPresenter.android.R;
+import net.fdloch.wifiPresenter.android.SoundButtonObserver;
 import net.fdloch.wifiPresenter.android.network.Connection;
 import net.fdloch.wifiPresenter.android.network.ConnectionListener;
 import net.fdloch.wifiPresenter.android.network.HandshakeLayer;
+import net.fdloch.wifiPresenter.android.types.ServerAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
