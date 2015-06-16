@@ -18,22 +18,26 @@ public class DiscoveredServerAdapter extends BaseAdapter {
 
     private List<ServiceDiscovery.ServerInformation> discoveredServers = new ArrayList<ServiceDiscovery.ServerInformation>();
 
-    public void add(ServiceDiscovery.ServerInformation server) {
+    public synchronized void add(ServiceDiscovery.ServerInformation server) {
         this.discoveredServers.add(server);
         notifyDataSetChanged();
     }
 
-    public boolean isCustomConnectionItem(long id) {
+    public synchronized void clear() {
+        this.discoveredServers.clear();
+    }
+
+    public synchronized boolean isCustomConnectionItem(long id) {
         return id == ID_CUSTOM_CONNECTION;
     }
 
     @Override
-    public int getCount() {
+    public synchronized int getCount() {
         return this.discoveredServers.size() + 1;
     }
 
     @Override
-    public Object getItem(int position) {
+    public synchronized Object getItem(int position) {
         if (position < this.discoveredServers.size()) {
             return this.discoveredServers.get(position);
         }
@@ -41,8 +45,12 @@ public class DiscoveredServerAdapter extends BaseAdapter {
         return null;
     }
 
+    public synchronized ServiceDiscovery.ServerInformation getServerInformationById(long id) {
+        return this.discoveredServers.get((int) id);
+    }
+
     @Override
-    public long getItemId(int position) {
+    public synchronized long getItemId(int position) {
         if (position == this.discoveredServers.size()) {
             return ID_CUSTOM_CONNECTION;
         }
@@ -51,7 +59,7 @@ public class DiscoveredServerAdapter extends BaseAdapter {
     }
 
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public synchronized View getView(int position, View convertView, ViewGroup parent) {
         View view = convertView;
 
         if (null == view) {

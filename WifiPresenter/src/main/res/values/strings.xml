@@ -9,5 +9,6 @@
     <string name="lbl_server_address">Please enter address of server</string>
     <string name="btn_connect">Connect</string>
     <string name="title_activity_control">ControlActivity</string>
+    <string name="action_rescan">Rescan network</string>
 
 </resources>

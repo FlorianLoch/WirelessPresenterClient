@@ -1,8 +1,6 @@
 package net.fdloch.wifiPresenter.android;
 
-import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -10,14 +8,11 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ListView;
 import net.fdloch.wifiPresenter.android.network.ServiceDiscovery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
 import java.util.List;
 
 
@@ -26,6 +21,14 @@ public class ServerSelection extends ActionBarActivity {
     public static final String PARCEL_KEY_SERVER_ADDRESS = "server_address";
     private static final String PASSPHRASE = "TOP_SECRET";
     private DiscoveredServerAdapter serverListAdapter;
+    private ListView serverList;
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        doDiscovery();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,52 +37,49 @@ public class ServerSelection extends ActionBarActivity {
 
         System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "TRACE");
 
+        this.serverList = (ListView) findViewById(R.id.lv_found_server);
+    }
+
+    private void doDiscovery() {
         this.serverListAdapter = new DiscoveredServerAdapter();
 
         final ProgressDialog progressDialog = ProgressDialog.show(this, "Scanning network...", "please be patient", true);
+
+        this.serverList.setAdapter(this.serverListAdapter);
+        this.serverList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                if (serverListAdapter.isCustomConnectionItem(id)) {
+                    return;
+                }
+
+                goToControlActivity(serverListAdapter.getServerInformationById(id).getAddress().getHostAddress(), PASSPHRASE);
+            }
+        });
 
         new ServiceDiscovery().discoverServices(new ServiceDiscovery.Callback() {
             @Override
             public synchronized void onServerFound(final ServiceDiscovery.ServerInformation discoveredServer) {
                 log.info(String.format("New server discovered %s", discoveredServer));
-
-//                runOnUiThread(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        new AlertDialog.Builder(ServerSelection.this)
-//                            .setTitle("Server found!")
-//                            .setMessage("A server has been found in your network (" + discoveredServer.getHostname() + ") - do you want to connect to it?")
-//                            .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-//                                public void onClick(DialogInterface dialog, int which) {
-//                                    ServerSelection.this.txt_ip.setText(discoveredServer.getAddress().getHostAddress());
-//                                }
-//                            })
-//                            .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
-//                                public void onClick(DialogInterface dialog, int which) {
-//                                    dialog.cancel();
-//                                }
-//                            })
-//                            .setIcon(android.R.drawable.ic_dialog_alert)
-//                            .show();
-
-                serverListAdapter.add(discoveredServer);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        serverListAdapter.add(discoveredServer);
+                    }
+                });
             }
 
             @Override
             public synchronized void onTimeoutReached(List<ServiceDiscovery.ServerInformation> discoveredServers) {
-                progressDialog.dismiss();
+                System.out.println("Should close dialog!");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        progressDialog.dismiss();
+                    }
+                });
             }
-        }, 8081, (int) 1E4);
-
-        ListView serverList = (ListView) findViewById(R.id.lv_found_server);
-        serverList.setAdapter(this.serverListAdapter);
-        serverList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                System.out.println("Pressed: " + id);
-                //goToControlActivity();
-            }
-        });
+        }, 8081, (int) 3E3);
     }
 
     private void goToControlActivity(String ip, String passcode) {
@@ -105,8 +105,8 @@ public class ServerSelection extends ActionBarActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.rescan_item) {
+            doDiscovery();git
             return true;
         }
 

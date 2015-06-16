@@ -18,6 +18,7 @@ public class Connection extends Thread {
     private PrintWriter out;
     private Socket socket;
     private ConnectionListener listener;
+    private String remoteIP;
     private boolean stop;
 
     public Connection(Socket socket) throws IOException {
@@ -29,7 +30,13 @@ public class Connection extends Thread {
         this.out = out;
         this.socket = socket;
 
+        this.remoteIP = this.socket.getRemoteSocketAddress().toString();
+
         log.debug("New Connection instance created");
+    }
+
+    public String getRemoteIP() {
+        return this.remoteIP;
     }
 
     public void setListener(ConnectionListener l) {
@@ -88,9 +95,9 @@ public class Connection extends Thread {
     public void close() throws IOException {
         log.debug("Going to close socket...");
 
+        this.socket.close();
         this.in.close();
         this.out.close();
-        this.socket.close();
 
         log.debug("Successfully closed socket!");
     }
