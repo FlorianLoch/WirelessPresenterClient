@@ -2,14 +2,12 @@ package net.fdloch.wifiPresenter.android;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.os.Handler;
 import android.support.v4.app.NavUtils;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.WindowManager;
+import android.widget.TextView;
 import android.widget.Toast;
 import net.fdloch.wifiPresenter.android.network.Connection;
 import net.fdloch.wifiPresenter.android.network.ConnectionListener;
@@ -19,6 +17,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class ControlActivity extends Activity {
     private static final Logger log = LoggerFactory.getLogger(ControlActivity.class);
@@ -48,6 +48,8 @@ public class ControlActivity extends Activity {
             });
         }
     };
+    private TextView tV_timer;
+    private long startedAt = 0;
 
     @Override
     public void onBackPressed() {
@@ -93,6 +95,43 @@ public class ControlActivity extends Activity {
 */
 
         this.connectToServer(sA);
+
+        this.tV_timer = (TextView) findViewById(R.id.tv_timer);
+
+        this.startedAt = System.currentTimeMillis();
+        setupSchedule();
+    }
+
+    private void setupSchedule() {
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        updateTimer();
+                    }
+                });
+
+                setupSchedule();
+            }
+        }, 1000);
+    }
+
+    private void updateTimer() {
+        int a = Math.round((System.currentTimeMillis() - startedAt) / 1000.0f);
+        int hours = a / 3600;
+        a -= hours * 3600;
+        int minutes = a / 60;
+        a -= minutes * 60;
+        int seconds = a;
+
+        String str = "";
+        if (hours > 0) str += String.format("%d h : ", hours);
+        if (minutes > 0 || hours > 0) str += String.format("%d m : ", minutes);
+        str += String.format("%d s", seconds);
+
+        tV_timer.setText(str);
     }
 
     private void connectToServer(final ServerAddress address) {

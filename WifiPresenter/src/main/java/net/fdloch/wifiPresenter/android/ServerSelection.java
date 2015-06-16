@@ -1,6 +1,8 @@
 package net.fdloch.wifiPresenter.android;
 
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -19,7 +21,6 @@ import java.util.List;
 public class ServerSelection extends ActionBarActivity {
     private static final Logger log = LoggerFactory.getLogger(ServerSelection.class);
     public static final String PARCEL_KEY_SERVER_ADDRESS = "server_address";
-    private static final String PASSPHRASE = "TOP_SECRET";
     private DiscoveredServerAdapter serverListAdapter;
     private ListView serverList;
 
@@ -50,10 +51,16 @@ public class ServerSelection extends ActionBarActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if (serverListAdapter.isCustomConnectionItem(id)) {
+                    new CustomConnectionDialog().show(ServerSelection.this, new SimpleInputDialog.DialogListener() {
+                        @Override
+                        public void onFinished(String ip) {
+                            showPassphraseDialog(ip);
+                        }
+                    });
                     return;
                 }
 
-                goToControlActivity(serverListAdapter.getServerInformationById(id).getAddress().getHostAddress(), PASSPHRASE);
+                showPassphraseDialog(serverListAdapter.getServerInformationById(id).getAddress().getHostAddress());
             }
         });
 
@@ -79,7 +86,16 @@ public class ServerSelection extends ActionBarActivity {
                     }
                 });
             }
-        }, 8081, (int) 3E3);
+        }, 8081, (int) 1E3);
+    }
+
+    private void showPassphraseDialog(final String hostAddress) {
+        new PassphraseDialog().show(this, new SimpleInputDialog.DialogListener() {
+            @Override
+            public void onFinished(String passphrase) {
+                goToControlActivity(hostAddress, passphrase);
+            }
+        });
     }
 
     private void goToControlActivity(String ip, String passcode) {
@@ -106,14 +122,10 @@ public class ServerSelection extends ActionBarActivity {
         int id = item.getItemId();
 
         if (id == R.id.rescan_item) {
-            doDiscovery();git
+            doDiscovery();
             return true;
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    public void onConnectButtonClick() {
-
     }
 }
