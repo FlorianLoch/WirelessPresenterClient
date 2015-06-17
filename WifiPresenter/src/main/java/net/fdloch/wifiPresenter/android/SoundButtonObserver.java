@@ -4,11 +4,14 @@ import android.content.Context;
 import android.database.ContentObserver;
 import android.media.AudioManager;
 import android.os.Handler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by florian on 14.06.15.
  */
 public class SoundButtonObserver extends ContentObserver {
+    private static final Logger log = LoggerFactory.getLogger(SoundButtonObserver.class);
     private int previousVolume;
     private AudioManager audioMngr;
     private SoundButtonListener volumeUpListener;
@@ -36,14 +39,11 @@ public class SoundButtonObserver extends ContentObserver {
         this.volumeDownListener = listener;
     }
 
-
-    private int getCurrentVolume() {
-        return this.audioMngr.getStreamVolume(AudioManager.STREAM_MUSIC);
-    }
-
     @Override
     public void onChange(boolean selfChange) {
         super.onChange(selfChange);
+
+        log.info("Changed volume to " + getCurrentVolume());
 
         int delta = this.previousVolume - getCurrentVolume();
         this.previousVolume = getCurrentVolume();
@@ -54,6 +54,10 @@ public class SoundButtonObserver extends ContentObserver {
         else if (delta > 0) {
             this.volumeDownListener.onButtonPressed();
         }
+    }
+
+    private int getCurrentVolume() {
+        return this.audioMngr.getStreamVolume(AudioManager.STREAM_MUSIC);
     }
 
     public interface SoundButtonListener {

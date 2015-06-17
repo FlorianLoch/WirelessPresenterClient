@@ -45,7 +45,7 @@ public abstract class SimpleInputDialog {
     }
 
     public abstract static class DialogListener {
-        abstract void onFinished(String input);
+        abstract public void onFinished(String input);
 
         void onCancelled() {
             //

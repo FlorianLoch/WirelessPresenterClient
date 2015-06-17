@@ -2,6 +2,7 @@ package net.fdloch.wifiPresenter.android.activities;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.media.AudioManager;
 import android.support.v4.app.NavUtils;
 import android.os.Bundle;
 import android.view.KeyEvent;
@@ -12,6 +13,7 @@ import android.widget.Toast;
 import net.fdloch.wifiPresenter.android.CommandProducer;
 import net.fdloch.wifiPresenter.android.R;
 import net.fdloch.wifiPresenter.android.SoundButtonObserver;
+import net.fdloch.wifiPresenter.android.SoundButtonService;
 import net.fdloch.wifiPresenter.android.network.Connection;
 import net.fdloch.wifiPresenter.android.network.ConnectionListener;
 import net.fdloch.wifiPresenter.android.network.HandshakeLayer;
@@ -55,6 +57,8 @@ public class ControlActivity extends Activity {
     private TextView tV_timer;
     private long startedAt = 0;
 
+    private CommandProducer cP;
+
     @Override
     public void onBackPressed() {
         System.out.println("Back pressed!");
@@ -68,9 +72,6 @@ public class ControlActivity extends Activity {
         finish();
     }
 
-    private CommandProducer cP;
-    private SoundButtonObserver soundButtonObserver;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -81,29 +82,16 @@ public class ControlActivity extends Activity {
         Intent intent = getIntent();
         ServerAddress sA = intent.getParcelableExtra(ServerSelection.PARCEL_KEY_SERVER_ADDRESS);
 
-/*
-        this.soundButtonObserver = new SoundButtonObserver(this, new Handler());
-        this.soundButtonObserver.setOnVolumeDownListener(new SoundButtonObserver.SoundButtonListener() {
-            @Override
-            public void onButtonPressed() {
-                cP.fireNextCommand();
-            }
-        });
-        this.soundButtonObserver.setOnVolumeUpListener(new SoundButtonObserver.SoundButtonListener() {
-            @Override
-            public void onButtonPressed() {
-                cP.fireBackCommand();
-            }
-        });
-        getApplicationContext().getContentResolver().registerContentObserver(android.provider.Settings.System.CONTENT_URI, true, this.soundButtonObserver);
-*/
-
         this.connectToServer(sA);
 
         this.tV_timer = (TextView) findViewById(R.id.tv_timer);
 
         this.startedAt = System.currentTimeMillis();
         setupSchedule();
+
+        setVolumeControlStream(AudioManager.STREAM_MUSIC);
+        Intent serviceIntent = new Intent(this, SoundButtonService.class);
+        startService(serviceIntent);
     }
 
     private void setupSchedule() {

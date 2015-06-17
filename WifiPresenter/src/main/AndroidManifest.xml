@@ -24,6 +24,9 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".activities.ServerSelection" />
         </activity>
+        <service android:name=".SoundButtonService"
+                 android:exported="false"
+                />
     </application>
     <uses-permission android:name="android.permission.INTERNET"></uses-permission>
 
