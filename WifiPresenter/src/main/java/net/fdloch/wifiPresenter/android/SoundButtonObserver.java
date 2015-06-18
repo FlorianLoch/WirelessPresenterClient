@@ -16,6 +16,7 @@ public class SoundButtonObserver extends ContentObserver {
     private AudioManager audioMngr;
     private SoundButtonListener volumeUpListener;
     private SoundButtonListener volumeDownListener;
+    private boolean active = false;
 
     public SoundButtonObserver(Context context, Handler handler) {
         super(handler);
@@ -29,6 +30,10 @@ public class SoundButtonObserver extends ContentObserver {
         };
         this.volumeUpListener = noop;
         this.volumeDownListener = noop;
+
+        setAudioVolume(getMaxVolume() / 2);
+
+        this.active = true;
     }
 
     public void setOnVolumeUpListener(SoundButtonListener listener) {
@@ -43,21 +48,41 @@ public class SoundButtonObserver extends ContentObserver {
     public void onChange(boolean selfChange) {
         super.onChange(selfChange);
 
-        log.info("Changed volume to " + getCurrentVolume());
+        int maxVolume = getMaxVolume();
+        int currentVolume = getCurrentVolume();
 
-        int delta = this.previousVolume - getCurrentVolume();
-        this.previousVolume = getCurrentVolume();
+        log.info("Changed volume to " + currentVolume);
 
+        int delta = this.previousVolume - currentVolume;
+        this.previousVolume = currentVolume;
+
+        //Delta of 0 occurs when volume gets placed in the middle because this.previousVolume gets set before event is fired so delta is zero.
+        //This case shall be ignored!
         if (delta < 0) {
             this.volumeUpListener.onButtonPressed();
         }
         else if (delta > 0) {
             this.volumeDownListener.onButtonPressed();
         }
+
+        if (0 == currentVolume || maxVolume == currentVolume) {
+            int newVolume = maxVolume / 2;
+            this.previousVolume = newVolume;
+            setAudioVolume(newVolume);
+        }
+    }
+
+    private void setAudioVolume(int volume) {
+        this.audioMngr.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0);
+        log.info("Set volume of 'STREAM_MUSIC' to: " + volume);
     }
 
     private int getCurrentVolume() {
         return this.audioMngr.getStreamVolume(AudioManager.STREAM_MUSIC);
+    }
+
+    private int getMaxVolume() {
+        return this.audioMngr.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
     }
 
     public interface SoundButtonListener {

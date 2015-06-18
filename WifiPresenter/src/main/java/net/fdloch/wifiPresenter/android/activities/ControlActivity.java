@@ -210,6 +210,9 @@ public class ControlActivity extends Activity {
             e.printStackTrace();
         }
 
+        Intent serviceIntent = new Intent(this, SoundButtonService.class);
+        stopService(serviceIntent);
+
         log.info("Destroyed activity");
 
         //getApplicationContext().getContentResolver().unregisterContentObserver(this.soundButtonObserver);
