@@ -31,7 +31,9 @@ public class SoundButtonObserver extends ContentObserver {
         this.volumeUpListener = noop;
         this.volumeDownListener = noop;
 
-        setAudioVolume(getMaxVolume() / 2);
+        int newValue = getMaxVolume() / 2;
+        this.previousVolume = newValue;
+        setAudioVolume(newValue);
 
         this.active = true;
     }

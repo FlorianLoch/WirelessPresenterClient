@@ -25,18 +25,10 @@ public class ControlActivity extends Activity {
     private long startedAt = 0;
     private AudioManager audioManager;
 
-//    @Override
-//    public void onBackPressed() {
-//        System.out.println("Back pressed!");
-//        try {
-//            log.info("Going to close connection...");
-//            this.conn.close();
-//        } catch (Exception e) {
-//            log.error("Error while closing connection!", e);
-//        }
-//        log.info("Finished ControlActivity!");
-//        finish();
-//    }
+    @Override
+    public void onBackPressed() {
+        finish();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +48,8 @@ public class ControlActivity extends Activity {
         Intent serviceIntent = new Intent(this, ObserverService.class);
         serviceIntent.putExtra(ServerSelection.PARCEL_KEY_SERVER_ADDRESS, serverAddress);
         startService(serviceIntent);
+
+        log.info("Service started!");
     }
 
     private void setupSchedule() {
@@ -99,8 +93,10 @@ public class ControlActivity extends Activity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        //This could be replaced when using IPC
+        //Overwriting this method is necessary because otherwise Android will show its volume slider
 
+        //Changing volume should be replaced when using IPC
+        log.info("Key pressed");
         if (event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_UP) {
             this.audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC,
                     AudioManager.ADJUST_RAISE,
@@ -110,6 +106,9 @@ public class ControlActivity extends Activity {
             this.audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC,
                     AudioManager.ADJUST_LOWER,
                     AudioManager.FLAG_REMOVE_SOUND_AND_VIBRATE);
+        }
+        else {
+            return super.onKeyDown(keyCode, event);
         }
 
         return true;
