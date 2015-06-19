@@ -24,7 +24,7 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".activities.ServerSelection" />
         </activity>
-        <service android:name=".SoundButtonService"
+        <service android:name=".ObserverService"
                  android:exported="false"
                 />
     </application>

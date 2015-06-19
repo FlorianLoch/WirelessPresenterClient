@@ -6,17 +6,45 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.*;
+import android.widget.Toast;
+import net.fdloch.wifiPresenter.android.activities.ServerSelection;
+import net.fdloch.wifiPresenter.android.network.Connection;
+import net.fdloch.wifiPresenter.android.network.ConnectionListener;
+import net.fdloch.wifiPresenter.android.network.CommunicationLayer;
+import net.fdloch.wifiPresenter.android.types.ServerAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.Socket;
 
 /**
  * Created by florian on 17.06.15.
  */
-public class SoundButtonService extends Service {
-    private static final Logger log = LoggerFactory.getLogger(SoundButtonService.class);
+public class ObserverService extends Service {
+    private static final Logger log = LoggerFactory.getLogger(ObserverService.class);
     private SoundButtonObserver soundButtonObserver;
     private boolean isRunning;
     private Thread audioProducer;
+    private CommandProducer cP;
+    public static final int PORT = 8081;
+
+    private Connection conn;
+    private ConnectionListener listener = new ConnectionListener() {
+        @Override
+        public void onMessage(String msg) {}
+
+        @Override
+        public void onError(Exception e) {
+            log.error("An error regarding server connection occurred!", e);
+        }
+
+        @Override
+        public void onDisconnect() {
+            log.info(String.format("Connection to server '%s' lost!", conn.getRemoteIP()));
+//            Toast.makeText(ObserverService.this, "Connection to server lost...", Toast.LENGTH_LONG);
+        }
+    };
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -30,17 +58,23 @@ public class SoundButtonService extends Service {
             @Override
             public void onButtonPressed() {
                 log.info("Volume down!");
+                cP.fireNextCommand();
             }
         });
         this.soundButtonObserver.setOnVolumeUpListener(new SoundButtonObserver.SoundButtonListener() {
             @Override
             public void onButtonPressed() {
                 log.info("Volume up");
+                cP.fireBackCommand();
             }
         });
         getApplicationContext().getContentResolver().registerContentObserver(android.provider.Settings.System.CONTENT_URI, true, this.soundButtonObserver);
 
         log.info("Service started!");
+
+        ServerAddress serverAddress = intent.getParcelableExtra(ServerSelection.PARCEL_KEY_SERVER_ADDRESS);
+
+        connectToServer(serverAddress);
 
         this.audioProducer = new Thread(new Runnable() {
             @Override
@@ -81,6 +115,25 @@ public class SoundButtonService extends Service {
     }
 
 
+    private void connectToServer(final ServerAddress address) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Socket s = new Socket(address.getHost(), PORT);
+
+                    conn = new Connection(s);
+                    CommunicationLayer commLayer = new CommunicationLayer(listener, conn, address.getPasscode());
+
+                    conn.start();
+
+                    cP = new CommandProducer(commLayer);
+                } catch (Exception ex) {
+                    listener.onError(new Exception("Could not connect to server!", ex));
+                }
+            }
+        }).start();
+    }
 
     @Override
     public void onDestroy() {
@@ -91,8 +144,20 @@ public class SoundButtonService extends Service {
         try {
             this.audioProducer.join();
         } catch (InterruptedException e) {
+            log.warn("Failed to close audioProducer!", e);
             e.printStackTrace();
         }
+
+        try {
+            this.conn.close();
+            this.conn.join();
+        } catch (IOException e) {
+            log.warn("Failed to close connection!", e);
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         this.audioProducer = null;
         log.info("Service gets destroyed");
     }

@@ -19,7 +19,6 @@ public class Connection extends Thread {
     private Socket socket;
     private ConnectionListener listener;
     private String remoteIP;
-    private boolean stop;
 
     public Connection(Socket socket) throws IOException {
         this(new BufferedReader(new InputStreamReader(socket.getInputStream())), new PrintWriter(socket.getOutputStream()), socket);
@@ -43,7 +42,8 @@ public class Connection extends Thread {
         this.listener = l;
     }
 
-    public void send(String msg) {
+    //shall only be used via CommunicationLayer
+    void send(String msg) {
         this.out.println(msg);
         this.out.flush();
 
@@ -63,7 +63,6 @@ public class Connection extends Thread {
 
                 this.fireOnMessage(input);
             }
-            this.fireOnDisconnect();
         } catch (Exception e) {
             this.fireOnError(e);
         } finally {
