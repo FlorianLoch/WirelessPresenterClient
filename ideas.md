@@ -1,1 +1,2 @@
 - Vibrate after a given time to give speaker indication how long he is already talking
+- Statusbar notification while background service is runnign

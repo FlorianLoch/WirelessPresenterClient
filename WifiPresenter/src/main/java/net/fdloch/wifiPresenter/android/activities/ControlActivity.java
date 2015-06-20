@@ -1,16 +1,20 @@
 package net.fdloch.wifiPresenter.android.activities;
 
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.media.AudioManager;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.v4.app.NavUtils;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 import net.fdloch.wifiPresenter.android.ObserverService;
+import net.fdloch.wifiPresenter.android.ObserverServiceListener;
 import net.fdloch.wifiPresenter.android.R;
 import net.fdloch.wifiPresenter.android.types.ServerAddress;
 import org.slf4j.Logger;
@@ -43,13 +47,37 @@ public class ControlActivity extends Activity {
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
         this.audioManager = (AudioManager) this.getSystemService(Context.AUDIO_SERVICE);
 
-        ServerAddress serverAddress = getIntent().getParcelableExtra(ServerSelection.PARCEL_KEY_SERVER_ADDRESS);
+        final ServerAddress serverAddress = getIntent().getParcelableExtra(ServerSelection.PARCEL_KEY_SERVER_ADDRESS);
 
         Intent serviceIntent = new Intent(this, ObserverService.class);
-        serviceIntent.putExtra(ServerSelection.PARCEL_KEY_SERVER_ADDRESS, serverAddress);
-        startService(serviceIntent);
+        bindService(serviceIntent, new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                ObserverService.ObeserverServiceBinder boundService = (ObserverService.ObeserverServiceBinder) service;
+                boundService.setListener(new ObserverServiceListener() {
+                    @Override
+                    public void onError(Exception e) {
+                        log.error("Error received from service:", e);
+                        finish();
+                    }
 
-        log.info("Service started!");
+                    @Override
+                    public void onConnectionEstablished() {
+                        log.info("Service triggered 'onConnectionEstablished' event");
+                    }
+                });
+
+                boundService.initialize(serverAddress);
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+                log.info("Service disconnected from activity!");
+                finish();
+            }
+        }, BIND_AUTO_CREATE);
+
+        log.info("Activity: Service bound!");
     }
 
     private void setupSchedule() {

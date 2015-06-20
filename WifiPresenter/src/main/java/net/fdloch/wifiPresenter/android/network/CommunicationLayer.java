@@ -9,12 +9,12 @@ import org.slf4j.LoggerFactory;
  */
 public class CommunicationLayer implements ConnectionListener {
     private static final Logger log = LoggerFactory.getLogger(CommunicationLayer.class);
-    private ConnectionListener listener;
+    private CommunicationLayerListener listener;
     private Connection conn;
     private boolean handshakeCompleted;
     private String passphrase;
 
-    public CommunicationLayer(ConnectionListener listener, Connection conn, String passphrase) {
+    public CommunicationLayer(CommunicationLayerListener listener, Connection conn, String passphrase) {
         this.listener = listener;
         this.conn = conn;
         this.handshakeCompleted = false;
@@ -60,6 +60,7 @@ public class CommunicationLayer implements ConnectionListener {
         if (msg.equals("hs successful")) {
             log.info("Handshake successfully completed!");
             handshakeCompleted = true;
+            this.listener.onHandshakeCompleted();
         }
     }
 

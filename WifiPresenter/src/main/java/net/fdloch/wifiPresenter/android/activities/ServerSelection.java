@@ -90,7 +90,7 @@ public class ServerSelection extends ActionBarActivity {
                     }
                 });
             }
-        }, 8081, (int) 1E3);
+        }, 8081, (int) 3E3);
     }
 
     private void showPassphraseDialog(final String hostAddress) {
