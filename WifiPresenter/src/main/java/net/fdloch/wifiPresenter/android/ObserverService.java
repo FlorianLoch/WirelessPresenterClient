@@ -1,11 +1,16 @@
 package net.fdloch.wifiPresenter.android;
 
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.*;
+import android.support.v4.app.NotificationCompat;
+import net.fdloch.wifiPresenter.android.activities.ControlActivity;
 import net.fdloch.wifiPresenter.android.activities.ServerSelection;
 import net.fdloch.wifiPresenter.android.network.CommunicationLayerListener;
 import net.fdloch.wifiPresenter.android.network.Connection;
@@ -116,6 +121,10 @@ public class ObserverService extends Service {
     }
 
     private void initialize(ServerAddress serverAddress) {
+        setupNotification();
+
+        connectToServer(serverAddress);
+
         this.soundButtonObserver = new SoundButtonObserver(this, new Handler());
         this.soundButtonObserver.setOnVolumeDownListener(new SoundButtonObserver.SoundButtonListener() {
             @Override
@@ -134,7 +143,6 @@ public class ObserverService extends Service {
 
         getApplicationContext().getContentResolver().registerContentObserver(android.provider.Settings.System.CONTENT_URI, true, this.soundButtonObserver);
 
-        connectToServer(serverAddress);
 
         this.audioProducer = new Thread(new Runnable() {
             @Override
@@ -170,5 +178,21 @@ public class ObserverService extends Service {
         });
         this.isRunning = true;
         this.audioProducer.start();
+    }
+
+    private void setupNotification() {
+        Intent notificationIntent = new Intent(this, ControlActivity.class);
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
+        builder
+                .setAutoCancel(false)
+                .setSmallIcon(R.drawable.ic_notification_icon)
+                .setContentTitle(getString(R.string.notification_title))
+                .setContentText(getString(R.string.notification_details))
+                .setContentIntent(pendingIntent);
+
+        startForeground(28, builder.build());
     }
 }

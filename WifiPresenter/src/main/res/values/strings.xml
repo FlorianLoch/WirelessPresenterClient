@@ -10,5 +10,7 @@
     <string name="btn_connect">Connect</string>
     <string name="title_activity_control">ControlActivity</string>
     <string name="action_rescan">Rescan network</string>
+    <string name="notification_title">WifiPresenter</string>
+    <string name="notification_details">WifiPresenter is running... Click to open</string>
 
 </resources>
