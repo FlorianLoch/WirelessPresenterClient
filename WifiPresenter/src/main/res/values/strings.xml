@@ -12,5 +12,6 @@
     <string name="action_rescan">Rescan network</string>
     <string name="notification_title">WifiPresenter</string>
     <string name="notification_details">WifiPresenter is running... Click to open</string>
+    <string name="control_hint">You might turn the display off - you will still be able to switch slides via the volume buttons.</string>
 
 </resources>
