@@ -121,6 +121,8 @@ public class ObserverService extends Service {
     }
 
     private void initialize(ServerAddress serverAddress) {
+        // TODO Block usage of activity as long as the handshake has not been performed successfully
+
         setupNotification();
 
         connectToServer(serverAddress);

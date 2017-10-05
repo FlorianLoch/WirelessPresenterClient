@@ -29,7 +29,7 @@ public class CommunicationLayer implements ConnectionListener {
             return;
         }
 
-        this.conn.send(msg);
+        this.conn.enqueueMessage(msg);
     }
 
     @Override

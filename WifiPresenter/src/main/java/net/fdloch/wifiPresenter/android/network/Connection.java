@@ -8,6 +8,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Created by florian on 12.03.15.
@@ -19,6 +22,7 @@ public class Connection extends Thread {
     private Socket socket;
     private ConnectionListener listener;
     private String remoteIP;
+    private BlockingQueue<String> msgQueue = new LinkedBlockingQueue<>();
 
     public Connection(Socket socket) throws IOException {
         this(new BufferedReader(new InputStreamReader(socket.getInputStream())), new PrintWriter(socket.getOutputStream()), socket);
@@ -30,6 +34,19 @@ public class Connection extends Thread {
         this.socket = socket;
 
         this.remoteIP = this.socket.getRemoteSocketAddress().toString();
+
+        new Thread() {
+            @Override
+            public void run() {
+                while (!this.isInterrupted()) {
+                    try {
+                        Connection.this.send(msgQueue.take());
+                    } catch (InterruptedException e) {
+                        log.debug("Could not retrieve element from msgQueue due to an interruption!");
+                    }
+                }
+            }
+        }.start();
 
         log.debug("New Connection instance created");
     }
@@ -43,6 +60,11 @@ public class Connection extends Thread {
     }
 
     //shall only be used via CommunicationLayer
+    void enqueueMessage(String msg) {
+        this.msgQueue.add(msg);
+    }
+
+    // This should only be called from the dequeueing thread - never by the UI thread (unless one wants Android to throw an Exception)
     void send(String msg) {
         this.out.println(msg);
         this.out.flush();
