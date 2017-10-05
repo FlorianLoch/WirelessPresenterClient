@@ -3,7 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/WifiPresenter/WifiPresenter.iml" filepath="$PROJECT_DIR$/WifiPresenter/WifiPresenter.iml" />
-      <module fileurl="file://$PROJECT_DIR$/WifiPresenter_Android.iml" filepath="$PROJECT_DIR$/WifiPresenter_Android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/WirelessPresenterClient.iml" filepath="$PROJECT_DIR$/WirelessPresenterClient.iml" />
     </modules>
   </component>
 </project>
