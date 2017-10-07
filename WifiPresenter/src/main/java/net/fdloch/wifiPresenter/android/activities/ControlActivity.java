@@ -13,6 +13,7 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
+
 import net.fdloch.wifiPresenter.android.ObserverService;
 import net.fdloch.wifiPresenter.android.ObserverServiceListener;
 import net.fdloch.wifiPresenter.android.R;
@@ -20,6 +21,7 @@ import net.fdloch.wifiPresenter.android.types.ServerAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Observer;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -28,6 +30,7 @@ public class ControlActivity extends Activity {
     private TextView tV_timer;
     private long startedAt = 0;
     private AudioManager audioManager;
+    private ObserverService service;
 
     @Override
     public void onBackPressed() {
@@ -35,13 +38,33 @@ public class ControlActivity extends Activity {
     }
 
     @Override
+    protected void onDestroy() {
+        this.service.disconnect();
+
+        super.onDestroy();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putLong("timerStartedAt", this.startedAt);
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // TODO restore timer in case the activity got stopped before or got rotated (currently rotating re-calls onCreate)
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_control);
 
         this.tV_timer = (TextView) findViewById(R.id.tv_timer);
 
-        this.startedAt = System.currentTimeMillis();
+        if (savedInstanceState != null && savedInstanceState.containsKey("timerStartedAt")) {
+            this.startedAt = savedInstanceState.getLong("timerStartedAt");
+        }
+        else {
+            this.startedAt = System.currentTimeMillis();
+        }
+
         setupSchedule();
 
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
@@ -52,9 +75,9 @@ public class ControlActivity extends Activity {
         Intent serviceIntent = new Intent(this, ObserverService.class);
         bindService(serviceIntent, new ServiceConnection() {
             @Override
-            public void onServiceConnected(ComponentName name, IBinder service) {
-                ObserverService.ObeserverServiceBinder boundService = (ObserverService.ObeserverServiceBinder) service;
-                boundService.setListener(new ObserverServiceListener() {
+            public void onServiceConnected(ComponentName name, IBinder binder) {
+                service = ((ObserverService.ObeserverServiceBinder) binder).getService();
+                service.setObserverListener(new ObserverServiceListener() {
                     @Override
                     public void onError(Exception e) {
                         log.error("Error received from service:", e);
@@ -63,11 +86,18 @@ public class ControlActivity extends Activity {
 
                     @Override
                     public void onConnectionEstablished() {
+                        // TODO Enable UI
                         log.info("Service triggered 'onConnectionEstablished' event");
+                    }
+
+                    @Override
+                    public void onDisconnect() {
+                        // TODO Disable UI, dispose activity
+                        log.info("Conenction to server closed!");
                     }
                 });
 
-                boundService.initialize(serverAddress);
+                service.connect(serverAddress);
             }
 
             @Override
@@ -76,8 +106,6 @@ public class ControlActivity extends Activity {
                 finish();
             }
         }, BIND_AUTO_CREATE);
-
-        log.info("Activity: Service bound!");
     }
 
     private void setupSchedule() {
@@ -155,17 +183,5 @@ public class ControlActivity extends Activity {
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    protected void onDestroy() {
-        log.info("Destroying activity...");
-
-        Intent serviceIntent = new Intent(this, ObserverService.class);
-        stopService(serviceIntent);
-
-        log.info("Destroyed activity");
-
-        super.onDestroy();
     }
 }

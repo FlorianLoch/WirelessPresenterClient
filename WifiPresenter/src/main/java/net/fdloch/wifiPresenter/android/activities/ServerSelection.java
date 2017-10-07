@@ -1,7 +1,10 @@
 package net.fdloch.wifiPresenter.android.activities;
 
 import android.app.ProgressDialog;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.IBinder;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.view.Menu;
@@ -10,6 +13,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import net.fdloch.wifiPresenter.android.DiscoveredServerAdapter;
+import net.fdloch.wifiPresenter.android.ObserverService;
 import net.fdloch.wifiPresenter.android.R;
 import net.fdloch.wifiPresenter.android.dialog.CustomConnectionDialog;
 import net.fdloch.wifiPresenter.android.dialog.PassphraseDialog;
@@ -43,6 +47,18 @@ public class ServerSelection extends ActionBarActivity {
         System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "TRACE");
 
         this.serverList = (ListView) findViewById(R.id.lv_found_server);
+
+        Intent serviceIntent = new Intent(this, ObserverService.class);
+
+        startService(serviceIntent);
+    }
+
+    @Override
+    protected void onDestroy() {
+        Intent serviceIntent = new Intent(this, ObserverService.class);
+        stopService(serviceIntent);
+
+        super.onDestroy();
     }
 
     private void doDiscovery() {

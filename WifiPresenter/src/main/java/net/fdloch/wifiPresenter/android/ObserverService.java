@@ -29,8 +29,7 @@ import java.net.Socket;
 public class ObserverService extends Service {
     private static final Logger log = LoggerFactory.getLogger(ObserverService.class);
     private SoundButtonObserver soundButtonObserver;
-    private boolean isRunning;
-    private Thread audioProducer;
+    private DummyAudioProducer audioProducer;
     private CommandProducer cP;
     public static final int PORT = 8081;
     private ObserverServiceListener observerListener;
@@ -42,7 +41,9 @@ public class ObserverService extends Service {
         }
 
         @Override
-        public void onMessage(String msg) {}
+        public void onMessage(String msg) {
+            // NOOP; we do not need to handle incoming messages from the server
+        }
 
         @Override
         public void onError(Exception e) {
@@ -51,81 +52,16 @@ public class ObserverService extends Service {
 
         @Override
         public void onDisconnect() {
-            //TODO special excpetion type for ConnectionLost
-            observerListener.onError(new Exception(String.format("Connection to server '%s' lost!", conn.getRemoteIP())));
+            log.info(String.format("Connection to server '%s' lost!", conn.getRemoteIP()));
+            observerListener.onDisconnect();
         }
     };
 
     @Override
-    public IBinder onBind(Intent intent) {
-        log.info("Service: Service bound!");
-
-        return new ObeserverServiceBinder();
-    }
-
-    private void connectToServer(final ServerAddress address) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Socket s = new Socket(address.getHost(), PORT);
-
-                    conn = new Connection(s);
-                    CommunicationLayer commLayer = new CommunicationLayer(communicationListener, conn, address.getPasscode());
-
-                    conn.start();
-
-                    cP = new CommandProducer(commLayer);
-                } catch (Exception ex) {
-                    communicationListener.onError(new Exception("Could not connect to server!", ex));
-                }
-            }
-        }).start();
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-
-        getApplicationContext().getContentResolver().unregisterContentObserver(this.soundButtonObserver);
-        isRunning = false;
-        try {
-            this.audioProducer.join();
-        } catch (InterruptedException e) {
-            log.warn("Failed to close audioProducer!", e);
-            e.printStackTrace();
-        }
-
-        try {
-            this.conn.close();
-            this.conn.join();
-        } catch (IOException e) {
-            log.warn("Failed to close connection!", e);
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        this.audioProducer = null;
-        log.info("Service gets destroyed");
-    }
-
-    public class ObeserverServiceBinder extends Binder {
-        public void setListener(ObserverServiceListener listener) {
-            ObserverService.this.observerListener = listener;
-        }
-
-        public void initialize(ServerAddress serverAddress) {
-            ObserverService.this.initialize(serverAddress);
-        }
-    }
-
-    private void initialize(ServerAddress serverAddress) {
-        // TODO Block usage of activity as long as the handshake has not been performed successfully
+    public void onCreate() {
+        super.onCreate();
 
         setupNotification();
-
-        connectToServer(serverAddress);
 
         this.soundButtonObserver = new SoundButtonObserver(this, new Handler());
         this.soundButtonObserver.setOnVolumeDownListener(new SoundButtonObserver.SoundButtonListener() {
@@ -145,41 +81,78 @@ public class ObserverService extends Service {
 
         getApplicationContext().getContentResolver().registerContentObserver(android.provider.Settings.System.CONTENT_URI, true, this.soundButtonObserver);
 
+        this.audioProducer = new DummyAudioProducer();
+        this.audioProducer.start();
+    }
 
-        this.audioProducer = new Thread(new Runnable() {
+    @Override
+    public IBinder onBind(Intent intent) {
+        log.info("Service bound!");
+
+        return new ObeserverServiceBinder();
+    }
+
+    public class ObeserverServiceBinder extends Binder {
+        public ObserverService getService() {
+            return ObserverService.this;
+        }
+    }
+
+    public void setObserverListener(ObserverServiceListener observerListener) {
+        this.observerListener = observerListener;
+    }
+
+    public void connect(final ServerAddress address) {
+        // needed because creating a socket counts as a network operation (on the main thread)
+        new Thread(new Runnable() {
             @Override
             public void run() {
-                int samplingRate = 44100;
+                try {
+                    Socket s = new Socket(address.getHost(), PORT);
 
-                int bufSize = AudioTrack.getMinBufferSize(samplingRate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT);
+                    conn = new Connection(s);
+                    CommunicationLayer commLayer = new CommunicationLayer(communicationListener, conn, address.getPasscode());
 
-                AudioTrack track = new AudioTrack(AudioManager.STREAM_MUSIC, samplingRate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
+                    conn.start();
 
-                track.play();
-
-                short samples[] = new short[bufSize];
-                int amp = 1;
-                double twopi = 8.*Math.atan(1.);
-                double fr = 440.f;
-                double ph = 0.0;
-
-                log.info("Start playing music!");
-
-                while(isRunning){
-                    for(int i=0; i < bufSize; i++){
-                        samples[i] = (short) (amp*Math.sin(ph));
-                        ph += twopi*fr/samplingRate;
-                    }
-                    track.write(samples, 0, bufSize);
+                    cP = new CommandProducer(commLayer);
+                } catch (Exception ex) {
+                    observerListener.onError(new Exception("Could not connect to server!", ex));
                 }
-
-                track.stop();
-                track.release();
-                log.info("Stopped playing audio");
             }
-        });
-        this.isRunning = true;
-        this.audioProducer.start();
+        }).start();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+        getApplicationContext().getContentResolver().unregisterContentObserver(this.soundButtonObserver);
+        this.audioProducer.halt();
+        try {
+            this.audioProducer.join();
+        } catch (InterruptedException e) {
+            log.warn("Failed to close audioProducer!", e);
+            e.printStackTrace();
+        }
+
+        disconnect();
+
+        log.info("Service gets destroyed");
+    }
+
+    public void disconnect() {
+        // TODO Refactor this, move code to Connection class
+        try {
+            if (this.conn != null) {
+                this.conn.close();
+                this.conn.join();
+            }
+        } catch (IOException e) {
+            log.warn("Failed to close connection!", e);
+        } catch (InterruptedException e) {
+            log.error("InterruptedException occured during shutdown of connection", e);
+        }
     }
 
     private void setupNotification() {
