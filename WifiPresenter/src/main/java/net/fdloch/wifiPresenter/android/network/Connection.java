@@ -11,6 +11,7 @@ import java.net.Socket;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by florian on 12.03.15.
@@ -23,6 +24,7 @@ public class Connection extends Thread {
     private ConnectionListener listener;
     private String remoteIP;
     private BlockingQueue<String> msgQueue = new LinkedBlockingQueue<>();
+    private AtomicBoolean shallStop = new AtomicBoolean(false);
 
     public Connection(Socket socket) throws IOException {
         this(new BufferedReader(new InputStreamReader(socket.getInputStream())), new PrintWriter(socket.getOutputStream()), socket);
@@ -66,6 +68,10 @@ public class Connection extends Thread {
 
     // This should only be called from the dequeueing thread - never by the UI thread (unless one wants Android to throw an Exception)
     void send(String msg) {
+        if (shallStop.get()) {
+            return;
+        }
+
         this.out.println(msg);
         this.out.flush();
 
@@ -74,16 +80,23 @@ public class Connection extends Thread {
 
     @Override
     public void run() {
-        try {
-            while (this.socket.isConnected() && !this.socket.isClosed()) {
-                String input = this.in.readLine();
+        StringBuilder builder = new StringBuilder();
+        char[] buf = new char[1];
 
-                if (input == null) {
-                    this.socket.close();
+        try {
+            while (this.socket.isConnected() && !this.shallStop.get()) {
+                if (!this.in.ready()) {
                     continue;
                 }
 
-                this.fireOnMessage(input);
+                this.in.read(buf, 0, 1);
+
+                if (buf[0] == '\n') {
+                    this.fireOnMessage(builder.toString());
+                    builder = new StringBuilder();
+                } else {
+                    builder.append(buf);
+                }
             }
         } catch (Exception e) {
             this.fireOnError(e);
@@ -113,12 +126,11 @@ public class Connection extends Thread {
         this.listener.onDisconnect();
     }
 
-    public void close() throws IOException {
+    public void close() throws IOException, InterruptedException {
         log.debug("Going to close socket...");
 
-        this.socket.close();
-        this.in.close();
-        this.out.close();
+        shallStop.set(true);
+        join();
 
         log.debug("Successfully closed socket!");
     }
