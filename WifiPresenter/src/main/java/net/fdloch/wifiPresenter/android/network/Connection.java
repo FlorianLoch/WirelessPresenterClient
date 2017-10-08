@@ -72,7 +72,7 @@ public class Connection extends Thread {
             return;
         }
 
-        this.out.println(msg);
+        this.out.print(msg + "\n");
         this.out.flush();
 
         log.debug("Message sent: " + msg);
@@ -86,6 +86,7 @@ public class Connection extends Thread {
         try {
             while (this.socket.isConnected() && !this.shallStop.get()) {
                 if (!this.in.ready()) {
+                    Thread.sleep(10);
                     continue;
                 }
 
